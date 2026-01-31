@@ -476,6 +476,38 @@ function App() {
     a.click();
   };
 
+  const loadDemoData = () => {
+    if(!confirm("Load Demo Data? This will add sample entries.")) return;
+    
+    // Generate dates for the last 14 days
+    const demoEntries = [];
+    const interactions = ['Meeting', 'Coding', 'Reading', 'Exercise'];
+    const emotions = ['Focus', 'Frustration', 'Flow', 'Anxiety'];
+    
+    for(let i=14; i>=0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      
+      // Random number of entries per day (0-3)
+      const count = Math.floor(Math.random() * 3) + 1;
+      
+      for(let j=0; j<count; j++) {
+        const type = Math.random() > 0.5 ? 'observe' : (Math.random() > 0.5 ? 'pattern' : 'action');
+        demoEntries.push({
+          id: Date.now() - (i * 86400000) - (j*10000),
+          ts: date.toISOString(),
+          mode: type,
+          model: type === 'pattern' ? 'First Principles' : null,
+          text: `Sample: ${interactions[j % 4]} triggered ${emotions[j % 4]}.`,
+          xp: 10
+        });
+      }
+    }
+    
+    setEntries(prev => [...prev, ...demoEntries]);
+    alert("Demo data loaded! Check the Graph and Heatmap.");
+  };
+
   // ============ RENDER ============
   const renderHome = () => (
     <div className="screen">
@@ -593,6 +625,7 @@ function App() {
             <label>Backup Data</label>
             <button className="btn-backup" onClick={exportData}>⬇ Download JSON</button>
             <span className="hint">Safe copy</span>
+            <button className="btn-backup" style={{marginTop:'8px', borderColor:'var(--purple)', color:'var(--purple)'}} onClick={loadDemoData}>🎲 Load Demo Data</button>
           </div>
 
           <div className="setting">
