@@ -571,6 +571,11 @@ function App() {
 
       {/* Main Action */}
       <button className="btn-start" onClick={startSession}>Begin Training Session</button>
+      <button className="btn-quick-add" style={{
+        width:'100%',padding:'12px',background:'var(--bg2)',border:'1px solid var(--accent)',
+        borderRadius:'10px',color:'var(--accent)',fontSize:'13px',fontWeight:'600',
+        cursor:'pointer',marginBottom:'16px',transition:'all .2s'
+      }} onClick={() => setView('quickadd')}>⚡ Quick Add Entry</button>
 
       {/* Quick Actions */}
       <div className="quick-grid">
@@ -1075,6 +1080,90 @@ function App() {
     </div>
   );
 
+  const renderQuickAdd = () => {
+    const [quickMode, setQuickMode] = useState('observe');
+    const [quickText, setQuickText] = useState('');
+    const [quickModel, setQuickModel] = useState(null);
+    
+    const selectedModeData = MODES.find(m => m.id === quickMode);
+    
+    const handleQuickAdd = () => {
+      if (!quickText.trim()) return;
+      if (quickMode === 'pattern' && !quickModel) return;
+      
+      const newEntry = {
+        id: Date.now(),
+        sessionId: Date.now(),
+        mode: quickMode,
+        text: quickText,
+        model: quickModel,
+        xp: selectedModeData.xp,
+        ts: new Date().toISOString(),
+      };
+      
+      setEntries(prev => [...prev, newEntry]);
+      // Simple feedback
+      alert(`+${selectedModeData.xp} XP! Entry saved.`);
+      setQuickText('');
+      setView('home'); 
+    };
+
+    return (
+      <div className="screen">
+        <div className="screen-head"><button className="btn-back" onClick={() => setView('home')}>←</button><h2>⚡ Quick Add</h2></div>
+        
+        <div className="quick-mode-select">
+          <label>SELECT MODE</label>
+          <div className="mode-toggle-grid">
+            {MODES.map(m => (
+              <button 
+                key={m.id}
+                className={`mode-btn ${quickMode === m.id ? 'active' : ''}`}
+                onClick={() => setQuickMode(m.id)}
+                style={{borderColor: quickMode === m.id ? m.color : 'transparent', color: quickMode === m.id ? m.color : 'var(--text2)'}}
+              >
+                <span style={{fontSize:'16px'}}>{m.icon}</span>
+                <span>{m.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {quickMode === 'pattern' && (
+          <div className="session-model-select">
+             <label style={{display:'block',marginBottom:'8px',color:'var(--text2)',fontSize:'11px'}}>SELECT MENTAL MODEL</label>
+             <select 
+               className="model-dropdown"
+               value={quickModel || ''} 
+               onChange={e => setQuickModel(e.target.value)}
+             >
+               <option value="">-- Choose a Model --</option>
+               {MENTAL_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
+             </select>
+          </div>
+        )}
+
+        <div className="session-input-area">
+           <textarea
+             className="session-textarea"
+             placeholder={selectedModeData.placeholder}
+             value={quickText}
+             onChange={e => setQuickText(e.target.value)}
+             autoFocus
+           />
+        </div>
+
+        <button 
+          className="btn-next"
+          disabled={!quickText.trim() || (quickMode === 'pattern' && !quickModel)}
+          onClick={handleQuickAdd}
+        >
+          Add Entry (+{selectedModeData.xp} XP)
+        </button>
+      </div>
+    );
+  };
+
   const renderHistory = () => (
     <div className="screen">
       <div className="screen-head"><button className="btn-back" onClick={() => setView('home')}>←</button><h2>📋 History</h2></div>
@@ -1151,6 +1240,12 @@ function App() {
     .btn-reset-all:hover{background:#cf6679;color:#fff}
     .btn-backup{width:100%;padding:8px;background:var(--bg2);border:1px solid var(--accent);border-radius:6px;color:var(--accent);font-size:11px;cursor:pointer;margin-top:4px}
     .btn-backup:hover{background:rgba(100,255,218,0.1)}
+    
+    .quick-mode-select{margin-bottom:16px}
+    .quick-mode-select label{display:block;font-size:11px;color:var(--text2);margin-bottom:8px}
+    .mode-toggle-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .mode-btn{display:flex;flex-direction:column;align-items:center;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:10px;color:var(--text2);gap:4px;transition:all .2s}
+    .mode-btn.active{background:rgba(255,255,255,0.05)}
     
     .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:20px;z-index:100}
     .modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;max-width:320px;width:100%;text-align:center}
@@ -1373,6 +1468,7 @@ function App() {
       {view === 'graph' && renderGraph()}
       {view === 'flow' && renderFlow()}
       {view === 'decision' && renderDecision()}
+      {view === 'quickadd' && renderQuickAdd()}
       {view === 'session' && renderSession()}
       {view === 'complete' && renderComplete()}
       {view === 'history' && renderHistory()}
