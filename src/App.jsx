@@ -173,6 +173,89 @@ const LEVELS = [
   { level: 6, title: 'Mind Architect', xp: 1500 },
 ];
 
+// ============ COMPONENTS ============
+const QuickAddScreen = ({ onBack, onAdd, modes, models }) => {
+  const [quickMode, setQuickMode] = useState('observe');
+  const [quickText, setQuickText] = useState('');
+  const [quickModel, setQuickModel] = useState(null);
+  
+  const selectedModeData = modes.find(m => m.id === quickMode);
+  
+  const handleAdd = () => {
+    if (!quickText.trim()) return;
+    if (quickMode === 'pattern' && !quickModel) return;
+    
+    // Create entry
+    const newEntry = {
+      id: Date.now(),
+      sessionId: Date.now(),
+      mode: quickMode,
+      text: quickText,
+      model: quickModel,
+      xp: selectedModeData.xp,
+      ts: new Date().toISOString(),
+    };
+    
+    onAdd(newEntry);
+    alert(`+${selectedModeData.xp} XP! Entry saved.`);
+  };
+
+  return (
+    <div className="screen">
+      <div className="screen-head"><button className="btn-back" onClick={onBack}>←</button><h2>⚡ Quick Add</h2></div>
+      
+      <div className="quick-mode-select">
+        <label>SELECT MODE</label>
+        <div className="mode-toggle-grid">
+          {modes.map(m => (
+            <button 
+              key={m.id}
+              className={`mode-btn ${quickMode === m.id ? 'active' : ''}`}
+              onClick={() => setQuickMode(m.id)}
+              style={{borderColor: quickMode === m.id ? m.color : 'transparent', color: quickMode === m.id ? m.color : 'var(--text2)'}}
+            >
+              <span style={{fontSize:'16px'}}>{m.icon}</span>
+              <span>{m.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {quickMode === 'pattern' && (
+        <div className="session-model-select">
+           <label style={{display:'block',marginBottom:'8px',color:'var(--text2)',fontSize:'11px'}}>SELECT MENTAL MODEL</label>
+           <select 
+             className="model-dropdown"
+             value={quickModel || ''} 
+             onChange={e => setQuickModel(e.target.value)}
+           >
+             <option value="">-- Choose a Model --</option>
+             {models.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
+           </select>
+        </div>
+      )}
+
+      <div className="session-input-area">
+         <textarea
+           className="session-textarea"
+           placeholder={selectedModeData.prompt} // correct prompt field
+           value={quickText}
+           onChange={e => setQuickText(e.target.value)}
+           autoFocus
+         />
+      </div>
+
+      <button 
+        className="btn-next"
+        disabled={!quickText.trim() || (quickMode === 'pattern' && !quickModel)}
+        onClick={handleAdd}
+      >
+        Add Entry (+{selectedModeData.xp} XP)
+      </button>
+    </div>
+  );
+};
+
 // ============ MAIN APP ============
 function App() {
   // START FRESH (One-time wipe)
@@ -476,38 +559,6 @@ function App() {
     a.click();
   };
 
-  const loadDemoData = () => {
-    if(!confirm("Load Demo Data? This will add sample entries.")) return;
-    
-    // Generate dates for the last 14 days
-    const demoEntries = [];
-    const interactions = ['Meeting', 'Coding', 'Reading', 'Exercise'];
-    const emotions = ['Focus', 'Frustration', 'Flow', 'Anxiety'];
-    
-    for(let i=14; i>=0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      
-      // Random number of entries per day (0-3)
-      const count = Math.floor(Math.random() * 3) + 1;
-      
-      for(let j=0; j<count; j++) {
-        const type = Math.random() > 0.5 ? 'observe' : (Math.random() > 0.5 ? 'pattern' : 'action');
-        demoEntries.push({
-          id: Date.now() - (i * 86400000) - (j*10000),
-          ts: date.toISOString(),
-          mode: type,
-          model: type === 'pattern' ? 'First Principles' : null,
-          text: `Sample: ${interactions[j % 4]} triggered ${emotions[j % 4]}.`,
-          xp: 10
-        });
-      }
-    }
-    
-    setEntries(prev => [...prev, ...demoEntries]);
-    alert("Demo data loaded! Check the Graph and Heatmap.");
-  };
-
   // ============ RENDER ============
   const renderHome = () => (
     <div className="screen">
@@ -630,7 +681,6 @@ function App() {
             <label>Backup Data</label>
             <button className="btn-backup" onClick={exportData}>⬇ Download JSON</button>
             <span className="hint">Safe copy</span>
-            <button className="btn-backup" style={{marginTop:'8px', borderColor:'var(--purple)', color:'var(--purple)'}} onClick={loadDemoData}>🎲 Load Demo Data</button>
           </div>
 
           <div className="setting">
@@ -1080,108 +1130,31 @@ function App() {
     </div>
   );
 
-  const renderQuickAdd = () => {
-    const [quickMode, setQuickMode] = useState('observe');
-    const [quickText, setQuickText] = useState('');
-    const [quickModel, setQuickModel] = useState(null);
-    
-    const selectedModeData = MODES.find(m => m.id === quickMode);
-    
-    const handleQuickAdd = () => {
-      if (!quickText.trim()) return;
-      if (quickMode === 'pattern' && !quickModel) return;
-      
-      const newEntry = {
-        id: Date.now(),
-        sessionId: Date.now(),
-        mode: quickMode,
-        text: quickText,
-        model: quickModel,
-        xp: selectedModeData.xp,
-        ts: new Date().toISOString(),
-      };
-      
-      setEntries(prev => [...prev, newEntry]);
-      // Simple feedback
-      alert(`+${selectedModeData.xp} XP! Entry saved.`);
-      setQuickText('');
-      setView('home'); 
-    };
-
-    return (
-      <div className="screen">
-        <div className="screen-head"><button className="btn-back" onClick={() => setView('home')}>←</button><h2>⚡ Quick Add</h2></div>
-        
-        <div className="quick-mode-select">
-          <label>SELECT MODE</label>
-          <div className="mode-toggle-grid">
-            {MODES.map(m => (
-              <button 
-                key={m.id}
-                className={`mode-btn ${quickMode === m.id ? 'active' : ''}`}
-                onClick={() => setQuickMode(m.id)}
-                style={{borderColor: quickMode === m.id ? m.color : 'transparent', color: quickMode === m.id ? m.color : 'var(--text2)'}}
-              >
-                <span style={{fontSize:'16px'}}>{m.icon}</span>
-                <span>{m.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {quickMode === 'pattern' && (
-          <div className="session-model-select">
-             <label style={{display:'block',marginBottom:'8px',color:'var(--text2)',fontSize:'11px'}}>SELECT MENTAL MODEL</label>
-             <select 
-               className="model-dropdown"
-               value={quickModel || ''} 
-               onChange={e => setQuickModel(e.target.value)}
-             >
-               <option value="">-- Choose a Model --</option>
-               {MENTAL_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
-             </select>
-          </div>
-        )}
-
-        <div className="session-input-area">
-           <textarea
-             className="session-textarea"
-             placeholder={selectedModeData.placeholder}
-             value={quickText}
-             onChange={e => setQuickText(e.target.value)}
-             autoFocus
-           />
-        </div>
-
-        <button 
-          className="btn-next"
-          disabled={!quickText.trim() || (quickMode === 'pattern' && !quickModel)}
-          onClick={handleQuickAdd}
-        >
-          Add Entry (+{selectedModeData.xp} XP)
-        </button>
-      </div>
-    );
-  };
-
   const renderHistory = () => (
     <div className="screen">
       <div className="screen-head"><button className="btn-back" onClick={() => setView('home')}>←</button><h2>📋 History</h2></div>
-      <div className="history-list">
-        {entries.length === 0 ? <p className="empty">No entries yet.</p> : (
-          [...entries].reverse().slice(0, 50).map(e => {
-            const mode = MODES.find(m => m.id === e.mode);
-            return (
-              <div key={e.id} className="history-item" style={{ '--c': mode?.color }}>
-                <div className="history-head"><span>{mode?.icon} {mode?.name}</span><span>+{e.xp} XP</span></div>
-                <p>{e.text}</p>
-                {e.model && <span className="history-model">{e.model}</span>}
-                <span className="history-date">{new Date(e.ts).toLocaleDateString()}</span>
+      {entries.length === 0 ? (
+        <div className="empty-state">
+          <span className="empty-icon">📝</span>
+          <p>No entries yet. Start your journey!</p>
+        </div>
+      ) : (
+        <div className="history-list">
+          {entries.slice().reverse().map(e => (
+            <div key={e.id} className="history-item">
+              <div className="history-head">
+                <span className={`history-mode mode-${e.mode}`}>
+                   {MODES.find(m => m.id === e.mode)?.icon} {MODES.find(m => m.id === e.mode)?.name}
+                </span>
+                <span className="history-xp">+{e.xp} XP</span>
               </div>
-            );
-          })
-        )}
-      </div>
+              <p>{e.text}</p>
+              {e.model && <span className="history-model">{e.model}</span>}
+              <span className="history-date">{new Date(e.ts).toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 
@@ -1468,7 +1441,7 @@ function App() {
       {view === 'graph' && renderGraph()}
       {view === 'flow' && renderFlow()}
       {view === 'decision' && renderDecision()}
-      {view === 'quickadd' && renderQuickAdd()}
+      {view === 'quickadd' && <QuickAddScreen onBack={() => setView('home')} onAdd={(entry) => { setEntries(p => [...p, entry]); setView('home'); }} modes={MODES} models={MENTAL_MODELS} />}
       {view === 'session' && renderSession()}
       {view === 'complete' && renderComplete()}
       {view === 'history' && renderHistory()}
